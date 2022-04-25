@@ -1,6 +1,7 @@
 package com.szymon.repocheckerapp.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,7 +13,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -21,6 +25,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.szymon.repocheckerapp.data.GithubRepo
 import com.szymon.repocheckerapp.remote.GithubApi
 import com.szymon.repocheckerapp.remote.responses.GithubReposListItem
 import kotlinx.coroutines.CoroutineScope
@@ -29,10 +36,13 @@ import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-@Preview(showBackground = true)
 @Composable
-fun RepoListScreen() {
-    val repoList = remember { ArrayList<GithubReposListItem>().toMutableStateList() }
+fun RepoListScreen(
+    navController: NavController
+) {
+    val repoList = remember{ ArrayList<GithubRepo>().toMutableStateList() }
+
+
 
     val githubService = Retrofit.Builder()
         .baseUrl("https://api.github.com/")
@@ -57,11 +67,15 @@ fun RepoListScreen() {
                             if(repoList.size > 0) {
                                 repoList.removeRange(0, repoList.size)
                             }
-                            response.forEach { GithubReposListItem ->
-                                repoList.add(GithubReposListItem)
+                            response.forEach { githubRepo ->
+                                repoList.add(
+                                    GithubRepo(
+                                        repoName = githubRepo.name,
+                                        languagesUrl = githubRepo.languages_url
+                                    )
+                                )
                             }
-                        } catch(e : Exception)
-                        {
+                        } catch(e : Exception) {
 
                         }
                     }
@@ -80,6 +94,7 @@ fun RepoListScreen() {
 
             RepoList(
                 entries = repoList,
+                navController = navController,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
@@ -95,7 +110,8 @@ fun RepoListScreen() {
 @Composable
 fun RepoList(
     modifier: Modifier = Modifier,
-    entries: SnapshotStateList<GithubReposListItem>
+    navController: NavController,
+    entries: SnapshotStateList<GithubRepo>
 ) {
     LazyColumn(
         modifier = modifier
@@ -104,6 +120,7 @@ fun RepoList(
             items = entries
         ) {
             RepoEntry(
+                navController = navController,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(4.dp),
@@ -115,11 +132,17 @@ fun RepoList(
 @Composable
 fun RepoEntry(
     modifier: Modifier = Modifier,
-    entry : GithubReposListItem
+    navController: NavController,
+    entry : GithubRepo
 ) {
+
     Surface(
         color = MaterialTheme.colors.primary,
         modifier = modifier
+            .clickable {
+                navController.navigate("repoDetailsScreen/${entry.repoName}") {
+                }
+            }
     ) {
         Row(
             modifier = Modifier.padding(4.dp),
@@ -127,11 +150,10 @@ fun RepoEntry(
         ) {
             Text(
                 modifier = Modifier.weight(1f),
-                text = entry.name,
+                text = entry.repoName,
                 fontSize = 20.sp,
             )
         }
-
     }
 }
 
@@ -141,11 +163,19 @@ fun SearchBar(
     hint : String = "",
     onSearch: (String) -> Unit = {}
 ) {
-    var text by remember {
+    var text by rememberSaveable {
         mutableStateOf("")
     }
-    var isHintDisplayed by remember {
+    var isHintDisplayed by rememberSaveable {
         mutableStateOf(hint != "")
+    }
+
+    var searchPerformed by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if(searchPerformed) {
+        onSearch(text)
     }
 
     Box(
@@ -180,6 +210,7 @@ fun SearchBar(
             IconButton(
                 modifier = Modifier.padding( horizontal = 20.dp),
                 onClick = {
+                    searchPerformed = true
                     onSearch(text)
                 }
             ) {

@@ -10,6 +10,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.szymon.repocheckerapp.ui.screens.App
 import com.szymon.repocheckerapp.ui.screens.RepoListScreen
 import com.szymon.repocheckerapp.ui.theme.RepoCheckerAppTheme
 
@@ -23,22 +24,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    RepoListScreen()
+                    App()
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    RepoCheckerAppTheme {
-        Greeting("Android")
     }
 }
