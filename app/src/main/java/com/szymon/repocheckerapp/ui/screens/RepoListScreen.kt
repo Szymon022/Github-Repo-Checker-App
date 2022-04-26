@@ -1,15 +1,11 @@
 package com.szymon.repocheckerapp.ui.screens
 
-import androidx.compose.foundation.background
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,28 +15,46 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.szymon.repocheckerapp.data.GithubRepo
-import com.szymon.repocheckerapp.remote.GithubApi
 import com.szymon.repocheckerapp.remote.GithubService
-import com.szymon.repocheckerapp.remote.responses.GithubReposListItem
 import kotlinx.coroutines.*
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 @Composable
 fun RepoListScreen(
     navController: NavController
 ) {
     val repoList = remember{ ArrayList<GithubRepo>().toMutableStateList() }
+    var userName by rememberSaveable { mutableStateOf("") }
     val githubService = GithubService()
+    var searchPerformed by rememberSaveable { mutableStateOf(false) }
+
+    // it will execute every time we go back to the repoListScreen
+    if(searchPerformed) {
+        LaunchedEffect(Dispatchers.IO) {
+            try {
+                val response = githubService.getUserRepos(userName)
+
+                if(repoList.size > 0) {
+                    repoList.clear()
+                }
+
+                response.forEach { githubRepo ->
+                    repoList.add(
+                        GithubRepo(
+                            repoName = githubRepo.name,
+                            owner = githubRepo.owner.login,
+                            languagesUrl = githubRepo.languages_url
+                        )
+                    )
+                }
+            } catch(e : Exception) {
+
+            }
+        }
+    }
 
     Surface(
         color = MaterialTheme.colors.background
@@ -51,11 +65,16 @@ fun RepoListScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            SearchBar(hint = "Search github user..." ,onSearch = {
-                if(it != "") {
+
+            OutlinedTextField(
+                label = { Text(text = "Github User") },
+                value = userName,
+                onValueChange = { userName = it })
+            Button(
+                onClick = {  // search GithubUser
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
-                            val response = githubService.getUserRepos(it)
+                            val response = githubService.getUserRepos(userName)
 
                             if(repoList.size > 0) {
                                 repoList.clear()
@@ -74,19 +93,15 @@ fun RepoListScreen(
 
                         }
                     }
+                    searchPerformed = true
                 }
-                else {
-                    if(repoList.size > 0) {
-                        repoList.removeRange(0, repoList.size)
-                    }
-                }
+            ) {
+                Text(text = "Search")
             }
-            )
             Text(
                 text = "List of repositories:",
                 modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 4.dp, top = 8.dp)
             )
-
             RepoList(
                 entries = repoList,
                 navController = navController,
@@ -95,8 +110,6 @@ fun RepoListScreen(
                     .weight(1f)
                     .padding(top = 8.dp)
             )
-
-            
         }
     }
 
@@ -114,7 +127,7 @@ fun RepoList(
         items(
             items = entries
         ) {
-            RepoEntry(
+            RepoListEntry(
                 navController = navController,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -125,7 +138,7 @@ fun RepoList(
 }
 
 @Composable
-fun RepoEntry(
+fun RepoListEntry(
     modifier: Modifier = Modifier,
     navController: NavController,
     entry : GithubRepo
@@ -135,7 +148,7 @@ fun RepoEntry(
         color = MaterialTheme.colors.primary,
         modifier = modifier
             .clickable {
-                navController.navigate("repoDetailsScreen/${entry.owner}/${entry.repoName}")
+                navController.navigate(Screen.RepoDetailsScreen.withArgs(entry.owner, entry.repoName))
             }
     ) {
         Row(
@@ -148,73 +161,6 @@ fun RepoEntry(
                 fontSize = 15.sp,
                 color = MaterialTheme.colors.onPrimary
             )
-        }
-    }
-}
-
-
-@Composable
-fun SearchBar(
-    hint : String = "",
-    onSearch: (String) -> Unit = {}
-) {
-    var text by rememberSaveable {
-        mutableStateOf("")
-    }
-    var isHintDisplayed by rememberSaveable {
-        mutableStateOf(hint != "")
-    }
-
-    var searchPerformed by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    if(searchPerformed) {
-        onSearch(text)
-    }
-
-    Box(
-//        modifier = modifier
-    ) {
-        BasicTextField(
-            value = text,
-            onValueChange = {
-                text = it
-                isHintDisplayed = text == ""
-            },
-            maxLines = 1,
-            singleLine = true,
-            textStyle = TextStyle(color = Color.Black),
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(5.dp, CircleShape)
-                .background(Color.White, CircleShape)
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = if(isHintDisplayed) hint else "",
-                color = Color.LightGray,
-                modifier = Modifier
-                    .padding(vertical = 12.dp, horizontal = 20.dp)
-
-            )
-            IconButton(
-                modifier = Modifier.padding( horizontal = 20.dp),
-                onClick = {
-                    searchPerformed = true
-                    onSearch(text)
-                }
-            ) {
-                Icon(
-                    Icons.Filled.Search,
-                    contentDescription = "Search for user on Github",
-                    tint = MaterialTheme.colors.primary
-                )
-            }
         }
     }
 }

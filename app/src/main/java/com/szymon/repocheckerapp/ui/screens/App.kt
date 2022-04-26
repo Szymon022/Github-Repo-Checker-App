@@ -12,15 +12,14 @@ import androidx.navigation.navArgument
 fun App() {
 
     val navController = rememberNavController()
-    val backStackEntry = navController.currentBackStackEntryAsState()
 
-    NavHost(navController = navController, startDestination = "repoListScreen") {
-        composable("repoListScreen") {
+    NavHost(navController = navController, startDestination = Screen.RepoListScreen.route) {
+        composable(Screen.RepoListScreen.route) {
             RepoListScreen(navController)
         }
 
         composable(
-            "repoDetailsScreen/{userName}/{repoName}",
+            Screen.RepoDetailsScreen.route + "/{userName}/{repoName}",
             arguments = listOf(
                 navArgument("userName") {
                     type = NavType.StringType

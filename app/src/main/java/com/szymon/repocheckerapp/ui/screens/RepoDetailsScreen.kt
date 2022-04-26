@@ -10,15 +10,11 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.szymon.repocheckerapp.remote.GithubService
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.util.*
+
 
 @Composable
 fun RepoDetailsScreen(
@@ -33,9 +29,6 @@ fun RepoDetailsScreen(
             var languagesMap = mapOf<String, Int>()
             val githubService = GithubService()
 
-            val composableScope = rememberCoroutineScope()
-
-
             Text(modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp),
                 text = "List of used languages and bytes of code"
@@ -43,17 +36,15 @@ fun RepoDetailsScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 8.dp, horizontal = 16.dp)
             ) {
                 // force recomposition of items after languagesMap was acquired
 
                 validate.let {
                   items(items = languagesMap.toList()) {
-                      LanguageEntry(language = it.first, bytesUsed = it.second.toLong())
+                      LanguageListEntry(language = it.first, bytesUsed = it.second.toLong())
                   }
                 }
-
-
             }
             LaunchedEffect(Dispatchers.IO) {
                 try {
@@ -65,15 +56,13 @@ fun RepoDetailsScreen(
             }
         }
     }
-
 }
 
 @Composable
-fun LanguageEntry(
+fun LanguageListEntry(
     language: String,
     bytesUsed: Long
 ) {
-
     Row(
         modifier = Modifier
             .padding(vertical = 4.dp)
