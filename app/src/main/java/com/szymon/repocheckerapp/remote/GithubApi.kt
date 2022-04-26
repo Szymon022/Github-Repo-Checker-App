@@ -11,4 +11,10 @@ interface GithubApi {
         @Path("userName") userName : String,
     ) : GithubReposList
 
+    @GET("/repos/{userName}/{repoName}/languages")
+    suspend fun getRepoLanguagesDetails(
+        @Path("userName") userName: String,
+        @Path("repoName") repoName: String
+    ) : Map<String, Int>
+
 }

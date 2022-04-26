@@ -29,10 +29,9 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.szymon.repocheckerapp.data.GithubRepo
 import com.szymon.repocheckerapp.remote.GithubApi
+import com.szymon.repocheckerapp.remote.GithubService
 import com.szymon.repocheckerapp.remote.responses.GithubReposListItem
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -41,14 +40,7 @@ fun RepoListScreen(
     navController: NavController
 ) {
     val repoList = remember{ ArrayList<GithubRepo>().toMutableStateList() }
-
-
-
-    val githubService = Retrofit.Builder()
-        .baseUrl("https://api.github.com/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(GithubApi::class.java)
+    val githubService = GithubService()
 
     Surface(
         color = MaterialTheme.colors.background
@@ -59,18 +51,21 @@ fun RepoListScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            SearchBar(hint = "Search github user...", onSearch = {
+            SearchBar(hint = "Search github user..." ,onSearch = {
                 if(it != "") {
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
                             val response = githubService.getUserRepos(it)
+
                             if(repoList.size > 0) {
-                                repoList.removeRange(0, repoList.size)
+                                repoList.clear()
                             }
+
                             response.forEach { githubRepo ->
                                 repoList.add(
                                     GithubRepo(
                                         repoName = githubRepo.name,
+                                        owner = githubRepo.owner.login,
                                         languagesUrl = githubRepo.languages_url
                                     )
                                 )
@@ -80,13 +75,13 @@ fun RepoListScreen(
                         }
                     }
                 }
-                else
-                {
+                else {
                     if(repoList.size > 0) {
                         repoList.removeRange(0, repoList.size)
                     }
                 }
-            })
+            }
+            )
             Text(
                 text = "List of repositories:",
                 modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 4.dp, top = 8.dp)
@@ -140,18 +135,18 @@ fun RepoEntry(
         color = MaterialTheme.colors.primary,
         modifier = modifier
             .clickable {
-                navController.navigate("repoDetailsScreen/${entry.repoName}") {
-                }
+                navController.navigate("repoDetailsScreen/${entry.owner}/${entry.repoName}")
             }
     ) {
         Row(
-            modifier = Modifier.padding(4.dp),
+            modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp),
                 text = entry.repoName,
-                fontSize = 20.sp,
+                fontSize = 15.sp,
+                color = MaterialTheme.colors.onPrimary
             )
         }
     }

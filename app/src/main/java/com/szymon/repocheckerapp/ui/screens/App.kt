@@ -20,17 +20,20 @@ fun App() {
         }
 
         composable(
-            "repoDetailsScreen/{userName}/{repoName}/languages",
+            "repoDetailsScreen/{userName}/{repoName}",
             arguments = listOf(
                 navArgument("userName") {
                     type = NavType.StringType
                 },
                 navArgument("repoName") {
                     type = NavType.StringType
-                }
+                },
             )
         ) {
-            RepoDetailsScreen(it.arguments?.getString("languagesUrl")!!)
+            RepoDetailsScreen(
+                userName = it.arguments?.getString("userName")!!,
+                repoName = it.arguments?.getString("repoName")!!
+            )
         }
     }
 
