@@ -1,5 +1,5 @@
 ## What is this app?
-This app serves as Gtihub repository checker. User can search for github account and view all public repositories of this account. User can then select repository and check all languages used and how many bytes of code was written in each language.
+This app serves as Github repository checker. User can search for github account and view all public repositories of this account. User can then select repository and check all languages used and how many bytes of code was written in each language.
 
 ## What was used to build this app
 I used Jetpack Compose for UI, Retrofit and Coroutines for handling github api requests.  
